@@ -3,7 +3,7 @@ use axum::{
         routing::{get, get_service},
         Router,
 };
-use std::{fs::File, io::Read};
+use std::{fs::File, io::{BufRead, BufReader, Read}};
 use tokio::fs;
 use tower_http::services::{self, ServeFile};
 
@@ -25,7 +25,9 @@ async fn start_server() {
 
 async fn stream_read_file() {
         let mut file = File::open(FILE_PATH).unwrap();
-        let mut bytes: Vec<u8> = Vec::new();
-        file.read_to_end(&mut bytes).unwrap();
-        print!("{:?}", bytes);
+        let reader = BufReader::new(file);
+
+        for line in reader.bytes(){
+                println!("{:?}", line);
+        }
 }

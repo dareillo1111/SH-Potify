@@ -1,18 +1,31 @@
-use axum::{routing::get, Router};
+#![allow(unused)]
+use axum::{
+        routing::{get, get_service},
+        Router,
+};
+use std::{fs::File, io::Read};
+use tokio::fs;
+use tower_http::services::{self, ServeFile};
+
+const FILE_PATH: &str = "/home/dario/code/rust/TFG/tokio_test/test_audio/sample-15s.mp3";
 
 #[tokio::main]
 async fn main() {
-        let router = Router::new().route("/hi", get(say_hi));
+        stream_read_file().await;
+}
+
+async fn start_server() {
+        let router =
+                Router::new().nest_service("/test_audio", get_service(ServeFile::new(FILE_PATH)));
         let address = "0.0.0.0:6570";
         let listener = tokio::net::TcpListener::bind(&address).await.unwrap();
 
         axum::serve(listener, router).await.unwrap();
 }
 
-async fn say_hi() -> String {
-        "world".to_string()
-}
-
-async fn recive_hi(hi: String) {
-        println!("recived {0}", hi)
+async fn stream_read_file() {
+        let mut file = File::open(FILE_PATH).unwrap();
+        let mut bytes: Vec<u8> = Vec::new();
+        file.read_to_end(&mut bytes).unwrap();
+        print!("{:?}", bytes);
 }

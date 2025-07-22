@@ -1,54 +1,59 @@
 #![allow(unused)]
 use axum::{
-        routing::{get, get_service},
-        Router,
+        body::Body, http::{header, Response}, response::IntoResponse, routing::{get, get_service}, Router
 };
-use std::{fmt::format, fs::File, io::{BufRead, BufReader, Read}};
+use mp3_metadata::{read_from_file, Frame};
+use std::{
+        fmt::format,
+        fs::File,
+        io::{BufRead, BufReader, Read, Seek, SeekFrom},
+        path::Path,
+};
 use tokio::fs;
 use tower_http::services::{self, ServeFile};
 
-const FILE_PATH: &str = "/home/dario/code/rust/TFG/tokio_test/test_audio/sample-15s.mp3";
-
 #[tokio::main]
 async fn main() {
-        stream_read_file();
+        start_server().await;
 }
 
 async fn start_server() {
-        let router =
-                Router::new().nest_service("/test_audio", get_service(ServeFile::new(FILE_PATH)));
+
+        let router = Router::new().nest_service("/test_audio", get(get_frame_byte_handler));
         let address = "0.0.0.0:6570";
         let listener = tokio::net::TcpListener::bind(&address).await.unwrap();
 
         axum::serve(listener, router).await.unwrap();
 }
 
-fn stream_read_file() {
-        let file = File::open(FILE_PATH).unwrap();
-        let mut reader = BufReader::new(file);
-        let mut file_bytes = Vec::new();
-        reader.read_to_end(&mut file_bytes);
+async fn get_frame_byte_handler() -> impl IntoResponse {
+        let path = Path::new("/home/dario/code/rust/TFG/tokio_test/test_audio/sample-15s.mp3");
+        let bytes = get_frame_byte(path);
 
-        let mut byte_index = 0;
-        let mut mp3_header: [u8; 4] = [0; 4];
-        for byte in file_bytes {
-                let rotation = byte_index % 4;
-
-                if rotation == 3{
-                        print_header(mp3_header);
-                        mp3_header = [0; 4];
-                }
-
-                mp3_header[rotation] = byte;
-                byte_index += 1;
-        }
+        ([(header::CONTENT_TYPE, "audio/mpeg")], bytes)
 }
 
-fn print_header(header: [u8; 4]) {
-        let mut out_string = String::new();
-        for byte in header.iter(){
-                let format = format!("{:08b}", byte);
-                out_string.push_str(&format);
+fn get_frame_byte(path: &Path) -> Vec<u8> {
+        let mut mp3_file = File::open(path).unwrap();
+        let frames: Vec<Frame> = get_frames(path);
+        let mut frames_bytes: Vec<u8> = Vec::new();
+
+        for i in 0..frames.len() / 9{
+                let frame = frames.get(i).unwrap();
+                let offset = frame.offset;
+                let size = frame.size;
+                let mut frame_buf = vec![0u8; size as usize];
+
+                mp3_file.seek(SeekFrom::Start(offset as u64)).unwrap();
+                mp3_file.read_exact(&mut frame_buf).unwrap();
+
+                frames_bytes.append(&mut frame_buf);
         }
-        println!("{out_string}")
+
+        frames_bytes
+}
+
+fn get_frames(path: &Path) -> Vec<Frame> {
+        let metadata = read_from_file(path).unwrap();
+        metadata.frames
 }

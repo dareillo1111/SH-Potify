@@ -10,22 +10,18 @@ use std::{
         time::Duration,
 };
 
-#[derive(Debug, Deserialize)]
-struct PotyToken {
-        access_token: String,
-        token_type: String,
-        expires_in: u64,
+#[derive(Debug, Deserialize, Clone)]
+pub struct PotifyToken {
+        pub access_token: String,
+        pub token_type: String,
+        pub expires_in: u64,
 }
 
-static TOKEN: Lazy<Mutex<Option<PotyToken>>> = Lazy::new(|| {
-        Mutex::new(Some(PotyToken {
-                access_token: "null".to_string(),
-                token_type: "null".to_string(),
-                expires_in: 0,
-        }))
+static TOKEN: Lazy<Mutex<Option<PotifyToken>>> = Lazy::new(|| {
+        Mutex::new(None)
 });
 
-pub async fn set_token() -> Result<(), reqwest::Error> {
+pub async fn request_token() -> Result<(), reqwest::Error> {
         dotenv::dotenv().ok();
         let client_id = env::var("SPOTIFY_CLIENT_ID").expect("No client id");
         let client_secret = env::var("SPOTIFY_CLIENT_SECRET").expect("No secret");
@@ -44,14 +40,19 @@ pub async fn set_token() -> Result<(), reqwest::Error> {
                 .send()
                 .await?;
 
-        let json_token = result.json::<PotyToken>().await?;
-        let token_timeout = json_token.expires_in - 3590;
+        let json_token = result.json::<PotifyToken>().await?;
+        let token_timeout = json_token.expires_in;
         set_token_timeout(token_timeout);
 
         let mut guard = TOKEN.lock().unwrap();
         *guard = Some(json_token);
-        println!("before timeout: {:#?}", *guard);
+
         Ok(())
+}
+
+pub fn get_token() -> Option<PotifyToken> {
+        let guard = TOKEN.lock().unwrap();
+        guard.clone()
 }
 
 fn set_token_timeout(timeout: u64) {
@@ -59,6 +60,5 @@ fn set_token_timeout(timeout: u64) {
                 sleep(Duration::from_secs(timeout));
                 let mut guard = TOKEN.lock().unwrap();
                 *guard = None;
-                println!("after timeout: {:#?}", *guard);
         });
 }

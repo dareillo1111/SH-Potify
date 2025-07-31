@@ -10,6 +10,10 @@ use std::{
         io::{Read, Seek, SeekFrom},
 };
 
+pub mod cache_manager;
+pub mod token_manager;
+pub mod spoty_queries;
+
 #[derive(Deserialize)]
 pub struct GetSongParams {
         id: String,

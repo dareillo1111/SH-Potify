@@ -13,6 +13,7 @@ use std::{
 pub mod cache_manager;
 pub mod token_manager;
 pub mod spoty_queries;
+pub mod track_downloader;
 
 #[derive(Deserialize)]
 pub struct GetSongParams {

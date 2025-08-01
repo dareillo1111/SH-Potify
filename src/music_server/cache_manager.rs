@@ -5,7 +5,7 @@ use std::time::Duration;
 
 static CACHED_TRACKS: Lazy<Cache<String, PlayList>> = Lazy::new(|| {
         Cache::builder()
-                .time_to_live(Duration::from_secs(60))
+                .time_to_live(Duration::from_secs(300))
                 .build()
 });
 
@@ -17,5 +17,6 @@ pub async fn cache_playlists(playlists: Vec<PlayList>) {
 }
 
 pub async fn get_cached_playlist(playlist_url: &str) -> Option<PlayList> {
-        CACHED_TRACKS.get(playlist_url).await
+        let playlist = CACHED_TRACKS.get(playlist_url).await;
+        playlist
 }

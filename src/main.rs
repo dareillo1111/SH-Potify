@@ -2,6 +2,7 @@ use axum::{routing::get, Router};
 use tokio;
 use crate::music_server::get_song_range;
 use crate::music_server::spoty_queries::get_user_playlists;
+use crate::music_server::track_downloader::download_playlists;
 
 pub mod db_queries;
 pub mod music_server;
@@ -16,8 +17,8 @@ async fn main() {
 async fn start_server() {
         let router = Router::new()
                 .route("/get_song", get(get_song_range))
-                .route("/get_user_playlists", get(get_user_playlists));
-//                .route("/download_playlists", get(download_playlists));
+                .route("/get_user_playlists", get(get_user_playlists))
+                .route("/download_playlists", get(download_playlists));
 
 
         let address = "0.0.0.0:6570";

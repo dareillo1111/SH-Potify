@@ -1,7 +1,9 @@
 use base64::{engine::general_purpose, Engine};
+use anyhow::{anyhow, Result};
 use once_cell::sync::Lazy;
 use reqwest::Client;
 use serde::Deserialize;
+use anyhow::Error;
 use std::{
         collections::HashMap,
         env,
@@ -20,6 +22,17 @@ pub struct PotifyToken {
 static TOKEN: Lazy<Mutex<Option<PotifyToken>>> = Lazy::new(|| {
         Mutex::new(None)
 });
+
+pub async fn get_valid_token() -> Result<PotifyToken, Error> {
+        if let None = get_token() {
+                request_token().await?;
+        }
+        if let Some(token) = get_token() {
+                Ok(token)
+        } else {
+                Err(anyhow!("Filed to get token"))
+        }
+}
 
 pub async fn request_token() -> Result<(), reqwest::Error> {
         dotenv::dotenv().ok();

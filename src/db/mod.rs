@@ -10,7 +10,7 @@ pub async fn init_db(db_url: &str) -> Result<SqlitePool, sqlx::Error> {
 }
 
 pub(crate) fn insert_playlist(playlist: &Playlist, db_pool: &Pool<Sqlite>) -> () {
-    todo!()
+        ()
 }
 
 

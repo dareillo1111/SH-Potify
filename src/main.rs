@@ -1,28 +1,36 @@
-use axum::{routing::get, Router};
-use tokio;
-use crate::music_server::get_song_range;
-use crate::music_server::spoty_queries::get_user_playlists;
-use crate::music_server::track_downloader::download_playlists;
+use std::env::{self, set_var};
 
-pub mod db_queries;
-pub mod music_server;
+use axum::{
+        routing::{get, post},
+        Router,
+};
+use http_interface::*;
+use sqlx::SqlitePool;
+mod db;
+mod http_interface;
+mod shpotify;
+mod spotify_api;
+mod track_downloader;
 
-#[tokio::main]
-async fn main() {
-        //println!("{:?}", db_queries::initiate_db().await);
-        //println!("{:#?}", get_user_playlists("31q7modz4watrvvo4ixehhzibo6y").await.unwrap());
-        start_server().await;
+#[derive(Clone)]
+pub struct AppState {
+        db_pool: SqlitePool,
 }
 
-async fn start_server() {
-        let router = Router::new()
-                .route("/get_song", get(get_song_range))
-                .route("/get_user_playlists", get(get_user_playlists))
-                .route("/download_playlists", get(download_playlists));
+#[tokio::main(flavor = "multi_thread")]
+async fn main() {
+        let connection = db::init_db("url").await.expect("Failed initializing db");
+        let state = AppState {
+                db_pool: connection,
+        };
 
+        let router = Router::new()
+                .route("/get_user_playlists", get(get_user_playlists))
+                .route("/download_playlists", post(download_playlists))
+                .with_state(state);
 
         let address = "0.0.0.0:6570";
-        let listener = tokio::net::TcpListener::bind(&address).await.unwrap();
+        let listener = tokio::net::TcpListener::bind(address).await.unwrap();
 
         axum::serve(listener, router).await.unwrap();
 }

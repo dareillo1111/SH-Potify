@@ -1,4 +1,4 @@
-use crate::spotify_api::errors::SpotifyAPIErrors;
+use crate::{db::errors::DbErrors, spotify_api::errors::SpotifyAPIErrors};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -9,4 +9,6 @@ pub enum ShpotifyErrors {
         DownloadingTrackFailed,
         #[error("")]
         PersistingTrackFailed,
+        #[error(transparent)]
+        DbError(#[from] DbErrors),
 }

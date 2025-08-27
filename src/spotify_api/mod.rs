@@ -25,6 +25,7 @@ pub async fn get_playlists(user_id: &String) -> Result<Vec<Playlist>, SpotiErr> 
                 .await
                 .map_err(SpotiErr::RequestFailed)?;
 
+
         if playlists_request.status() == reqwest::StatusCode::NOT_FOUND {
                 return Err(SpotiErr::UserIdNotFound);
         }

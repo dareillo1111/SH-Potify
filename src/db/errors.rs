@@ -1,9 +1,9 @@
 use thiserror::Error;
 
 #[derive(Error, Debug)]
-pub(crate) enum DbErrors{
-        #[error("")]
+pub enum DbErrors{
+        #[error(transparent)]
         SqliteError(sqlx::Error),
-        #[error("")]
+        #[error("{0}")]
         TrackStructError(String),
 }

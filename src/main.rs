@@ -1,5 +1,3 @@
-use std::env::{self, set_var};
-
 use axum::{
         routing::{get, post},
         Router,
@@ -25,6 +23,7 @@ async fn main() {
         };
 
         let router = Router::new()
+                .route("/select_db_playlists", get(select_db_playlists))
                 .route("/get_user_playlists", get(get_user_playlists))
                 .route("/download_playlists", post(download_playlists))
                 .with_state(state);

@@ -20,9 +20,7 @@ pub(crate) async fn download_playlist(mut playlists: Vec<Playlist>) -> Vec<Playl
                         });
                 }
                 let download_paths = join_set.join_all().await;
-                let paths: HashMap<String, Option<String>> = download_paths
-                        .into_iter()
-                        .collect();
+                let paths: HashMap<String, Option<String>> = download_paths.into_iter().collect();
 
                 let tracks = asign_tracks_paths(paths, playlist.tracks.clone());
                 playlist.tracks = tracks;

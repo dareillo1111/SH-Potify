@@ -1,5 +1,11 @@
-use crate::{shpotify::{self, music_entities::Playlist}, AppState};
-use axum::{extract::{Query, State}, Json};
+use crate::{
+        shpotify::{self, music_entities::Playlist},
+        AppState,
+};
+use axum::{
+        extract::{Query, State},
+        Json,
+};
 use errors::*;
 use reqwest::StatusCode;
 use std::collections::HashMap;
@@ -17,7 +23,21 @@ pub async fn get_user_playlists(
 
                 return Ok(Json(playlists));
         }
+
         Err(HttpInterfaceErrors::MissingQueryParam)
+}
+
+#[axum::debug_handler]
+pub async fn select_db_playlists(
+        State(state): State<AppState>,
+) -> Result<Json<Vec<Playlist>>, HttpInterfaceErrors> {
+        println!("hi, im shy uwu");
+        let playlists = shpotify::get_db_playlists(state)
+                .await
+                .map_err(HttpInterfaceErrors::ShpotifyError)?;
+        println!("called? {:?}", playlists);
+
+        return Ok(Json(playlists));
 }
 
 #[axum::debug_handler]
@@ -25,18 +45,6 @@ pub async fn download_playlists(
         State(state): State<AppState>,
         Json(playlists): Json<Vec<Playlist>>,
 ) -> Result<StatusCode, HttpInterfaceErrors> {
-        /*let mut valid_playlists = Vec::new();
-                for playlist in playlists.into_iter() {
-                        if !playlist.tracks.is_empty() {
-                                println!("Empty?: \n{:?}", playlist.tracks);
-                                valid_playlists.push(playlist);
-                        }
-                }
-                if valid_playlists.is_empty() {
-                        return Err(HttpInterfaceErrors::EmptyPlaylist);
-                }
-
-        */
         let _ = shpotify::download_playlists(playlists, state).await;
         println!("return?");
         Ok(StatusCode::OK)

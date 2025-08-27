@@ -8,6 +8,7 @@ pub struct Track {
         pub album_name: String,
         pub artist: String,
         pub name: String,
+        #[sqlx(skip)]
         pub url: String,
 }
 

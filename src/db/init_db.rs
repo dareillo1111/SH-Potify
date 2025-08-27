@@ -28,7 +28,7 @@ async fn create_tables(connection: &SqlitePool) -> Result<(), sqlx::Error> {
 
         sqlx::query("CREATE TABLE IF NOT EXISTS tracks (file_path VARCHAR(250), image_path VARCHAR(250), spotify_id VARCHAR(250) PRIMARY KEY NOT NULL, album_name VARCHAR(250), artist VARCHAR(250), name VARCHAR(250))").execute(connection).await?;
 
-        sqlx::query("CREATE TABLE IF NOT EXISTS playlist_track (track_id VARCHAR(250) NOT NULL, playlist_id VARCHAR(250) NOT NULL, PRIMARY KEY (track_id, playlist_id), FOREIGN KEY (track_id) REFERENCES tracks(spotify_id), FOREIGN KEY (playlist_id) REFERENCES playlists(spotify_id))").execute(connection).await?;
+        sqlx::query("CREATE TABLE IF NOT EXISTS playlist_track ( playlist_id VARCHAR(250) NOT NULL, track_id VARCHAR(250) NOT NULL, PRIMARY KEY (track_id, playlist_id), FOREIGN KEY (track_id) REFERENCES tracks(spotify_id), FOREIGN KEY (playlist_id) REFERENCES playlists(spotify_id))").execute(connection).await?;
 
         Ok(())
 }

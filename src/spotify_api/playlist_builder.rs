@@ -36,16 +36,6 @@ pub(crate) fn build_track(json_track: &serde_json::Value) -> Result<Vec<Track>, 
         for item in items.iter() {
                 let track_info = item.get("track").ok_or(SpotiErr::EmptyPlaylist)?;
 
-                let image_url = track_info
-                        .get("album")
-                        .and_then(|album| album.get("images"))
-                        //Spoti API gives 3 images with diferent resolutions
-                        //the second one is 300x300
-                        .and_then(|images| images.get(1))
-                        .and_then(|image| image.get("url"))
-                        .and_then(|url| url.as_str())
-                        .and_then(|url| Some(url.to_string()));
-
                 let spotify_id = track_info
                         .get("id")
                         .and_then(|id| id.as_str())
@@ -82,8 +72,6 @@ pub(crate) fn build_track(json_track: &serde_json::Value) -> Result<Vec<Track>, 
 
                 let track: Track = Track {
                         file_path: None,
-                        image_path: None,
-                        image_url,
                         spotify_id,
                         album_name,
                         artist,

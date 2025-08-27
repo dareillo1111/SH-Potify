@@ -7,8 +7,8 @@ mod errors;
 const OUTPUT_DIR: &str = "./tracks/";
 
 pub(crate) async fn download_track(track: &Track) -> Option<String> {
-        let spotdl_path = format!("{OUTPUT_DIR}/{}.{{output-ext}}", &track.spotify_id);
-        let path = format!("{OUTPUT_DIR}/{}.mp3", &track.spotify_id);
+        let spotdl_path = format!("{OUTPUT_DIR}{}.{{output-ext}}", &track.spotify_id);
+        let path = format!("{OUTPUT_DIR}{}.mp3", &track.spotify_id);
 
         let command = Command::new("/home/dario/.local/bin/spotdl")
                 .arg(&track.url)

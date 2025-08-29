@@ -9,7 +9,7 @@ use thiserror::Error;
 pub enum HttpInterfaceErrors {
         #[error("Missing query params")]
         MissingQueryParam,
-        #[error("Consulting api failed")]
+        #[error(transparent)]
         ShpotifyError(#[from] ShpotifyErrors),
         #[error("Playlist has no tracks")]
         EmptyPlaylist,

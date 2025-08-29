@@ -3,11 +3,11 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum ShpotifyErrors {
-        #[error("")]
+        #[error(transparent)]
         SpotifyAPIError(#[from] SpotifyAPIErrors),
-        #[error("")]
+        #[error("Failed downloading track")]
         DownloadingTrackFailed,
-        #[error("")]
+        #[error("Failed persisting track")]
         PersistingTrackFailed,
         #[error(transparent)]
         DbError(#[from] DbErrors),

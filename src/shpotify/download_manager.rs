@@ -1,20 +1,25 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
-use tokio::task::JoinSet;
+use tokio::{sync::Semaphore, task::JoinSet};
 
 use crate::{
         shpotify::music_entities::{Playlist, Track},
         track_downloader,
 };
 
-pub(crate) async fn download_playlist(mut playlists: Vec<Playlist>) -> Vec<Playlist> {
+pub(crate) async fn download_playlist(
+        mut playlists: Vec<Playlist>,
+        semaphore: Arc<Semaphore>,
+) -> Vec<Playlist> {
         for playlist in playlists.iter_mut() {
                 let clone = playlist.clone();
                 //I'm consuming the playlist variable in the for loop so i need to clone it.
                 //There's a better way 100%
                 let mut join_set = JoinSet::new();
                 for track in clone.tracks.into_iter() {
+                        let semaphore = semaphore.clone();
                         join_set.spawn(async move {
+                                let _permit = semaphore.acquire().await.unwrap();
                                 let path = track_downloader::download_track(&track).await;
                                 (track.spotify_id, path)
                         });

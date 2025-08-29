@@ -53,33 +53,33 @@ pub(crate) async fn insert_playlist(
 pub(crate) async fn select_all_playlists(
         db_pool: &Pool<Sqlite>,
 ) -> Result<Vec<Playlist>, DbErrors> {
-        println!("in3");
         let mut playlists = playlist_queries::select_all(db_pool)
                 .await
                 .map_err(DbErrors::SqliteError)?;
-        println!("consulta playlists: {:?}", playlists);
 
-        println!("in3");
         for playlist in playlists.iter_mut() {
                 let playlist_tracks_id: Vec<String> =
                         playlist_track_queries::select_tracks_id(db_pool, &playlist.spotify_id)
                                 .await
                                 .map_err(DbErrors::SqliteError)?;
-                println!("consulta tracks_id: {:?}", playlist_tracks_id);
 
-                println!("in3");
                 let mut tracks = Vec::new();
                 for track_id in playlist_tracks_id.iter() {
-                        println!("inone1?");
                         let track = track_queries::select(db_pool, track_id)
                                 .await
                                 .map_err(DbErrors::SqliteError)?;
-                        println!("{:?}", track);
+
                         tracks.push(track);
                 }
-                println!("in2");
                 playlist.tracks = tracks;
         }
 
         Ok(playlists)
+}
+
+pub(crate) async fn select_track_path(
+        track_id: String,
+        db_pool: &Pool<Sqlite>,
+) -> Result<String, DbErrors> {
+        Ok(track_queries::select_path(db_pool, &track_id.as_str()).await.map_err(DbErrors::SqliteError)?)
 }

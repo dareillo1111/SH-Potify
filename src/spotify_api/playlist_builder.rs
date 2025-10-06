@@ -39,7 +39,7 @@ pub(crate) fn build_track(json_track: &serde_json::Value) -> Result<Vec<Track>, 
                 let spotify_id = track_info
                         .get("id")
                         .and_then(|id| id.as_str())
-                        .ok_or(SpotiErr::TrackWithoutId)?
+                        .unwrap_or("Failed getting id")
                         .to_string();
 
                 let album_name = track_info
@@ -61,7 +61,7 @@ pub(crate) fn build_track(json_track: &serde_json::Value) -> Result<Vec<Track>, 
                         .get("external_urls")
                         .and_then(|url| url.get("spotify"))
                         .and_then(|url| url.as_str())
-                        .ok_or(SpotiErr::TrackWithoutURL)?
+                        .unwrap_or("failed getting url")
                         .to_string();
 
                 let name = track_info

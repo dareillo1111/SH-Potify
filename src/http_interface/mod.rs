@@ -16,11 +16,13 @@ mod errors;
 
 #[axum::debug_handler]
 pub async fn get_user_playlists(
+        State(state): State<AppState>,
         Query(params): Query<HashMap<String, String>>,
 ) -> Result<Json<Vec<Playlist>>, HttpInterfaceErrors> {
         if let Some(id) = params.get("user-id") {
                 println!("serving");
-                let playlists = shpotify::get_playlists(id)
+                let token_manager = &state.token_manager;
+                let playlists = shpotify::get_playlists(id, token_manager)
                         .await
                         .map_err(HttpInterfaceErrors::ShpotifyError)?;
                 println!("correct");
@@ -47,7 +49,8 @@ pub async fn download_playlists(
         State(state): State<AppState>,
         Json(playlists): Json<Vec<Playlist>>,
 ) -> Result<StatusCode, HttpInterfaceErrors> {
-        let _ = shpotify::download_playlists(playlists, &state.db_pool, state.semaphore.clone()).await;
+        let _ = shpotify::download_playlists(playlists, &state.db_pool, state.semaphore.clone())
+                .await;
 
         Ok(StatusCode::OK)
 }

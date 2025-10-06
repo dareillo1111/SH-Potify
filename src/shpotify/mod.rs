@@ -1,26 +1,34 @@
 use std::sync::Arc;
 
-use axum_extra::{headers::Range, TypedHeader};
+use axum_extra::headers::Range;
 use sqlx::SqlitePool;
 use tokio::sync::Semaphore;
 
 use crate::{
         db,
         shpotify::{errors::ShpotifyErrors, music_entities::Playlist},
-        spotify_api, track_streamer, AppState,
+        spotify_api::{self, token_manager::TokenManager},
+        track_streamer,
 };
 
 mod download_manager;
 pub mod errors;
 pub mod music_entities;
 
-pub async fn get_playlists(user_id: &String) -> Result<Vec<Playlist>, ShpotifyErrors> {
-        spotify_api::get_playlists(user_id)
+pub async fn get_playlists(
+        user_id: &String,
+        token_manager: &TokenManager,
+) -> Result<Vec<Playlist>, ShpotifyErrors> {
+        spotify_api::get_playlists(user_id, token_manager)
                 .await
                 .map_err(ShpotifyErrors::SpotifyAPIError)
 }
 
-pub async fn download_playlists(playlists: Vec<Playlist>, db_pool: &SqlitePool, semaphore: Arc<Semaphore>) -> () {
+pub async fn download_playlists(
+        playlists: Vec<Playlist>,
+        db_pool: &SqlitePool,
+        semaphore: Arc<Semaphore>,
+) -> () {
         //This function dosent care about download errors. It stores None if the download failed.
         let new_playlists = download_manager::download_playlist(playlists, semaphore).await;
         println!("downloaded_playlists: {:?}", new_playlists);

@@ -9,6 +9,8 @@ use sqlx::SqlitePool;
 use tokio::sync::Semaphore;
 use tower_http::cors::{Any, CorsLayer};
 
+use crate::spotify_api::token_manager::TokenManager;
+
 mod db;
 mod http_interface;
 mod shpotify;
@@ -20,6 +22,7 @@ mod track_streamer;
 pub struct AppState {
         db_pool: SqlitePool,
         semaphore: Arc<Semaphore>,
+        token_manager: TokenManager,
 }
 
 #[tokio::main(flavor = "multi_thread")]
@@ -30,12 +33,13 @@ async fn main() {
                 .allow_methods(Any);
 
         let db_pool = db::init_db("url").await.expect("Failed initializing db");
-
         let semaphore = Arc::new(Semaphore::new(8));
+        let token_manager = spotify_api::token_manager::TokenManager::new();
 
         let state = AppState {
                 db_pool,
                 semaphore,
+                token_manager,
         };
 
         let router = Router::new()

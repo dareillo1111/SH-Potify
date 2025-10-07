@@ -27,23 +27,27 @@ pub(crate) async fn insert_playlist(
                 errors.push(result);
         }
 
-        for track in playlist.tracks.iter() {
-                if track.file_path.is_none() {
-                        errors.push(Err(DbErrors::TrackStructError(track.spotify_id.clone())));
-                } else {
-                        let result = track_queries::insert(track, db_pool)
-                                .await
-                                .map_err(DbErrors::SqliteError);
-
-                        if result.is_err() {
-                                errors.push(result);
+        if let Some(tracks) = playlist.tracks.clone() {
+                for track in tracks.iter() {
+                        if track.file_path.is_none() {
+                                errors.push(Err(DbErrors::TrackStructError(
+                                        track.spotify_id.clone(),
+                                )));
                         } else {
-                                playlist_track_queries::insert(
-                                        &track.spotify_id,
-                                        &playlist.spotify_id,
-                                        db_pool,
-                                )
-                                .await;
+                                let result = track_queries::insert(track, db_pool)
+                                        .await
+                                        .map_err(DbErrors::SqliteError);
+
+                                if result.is_err() {
+                                        errors.push(result);
+                                } else {
+                                        playlist_track_queries::insert(
+                                                &track.spotify_id,
+                                                &playlist.spotify_id,
+                                                db_pool,
+                                        )
+                                        .await;
+                                }
                         }
                 }
         }
@@ -71,7 +75,7 @@ pub(crate) async fn select_all_playlists(
 
                         tracks.push(track);
                 }
-                playlist.tracks = tracks;
+                playlist.tracks = Some(tracks);
         }
 
         Ok(playlists)
@@ -81,5 +85,7 @@ pub(crate) async fn select_track_path(
         track_id: String,
         db_pool: &Pool<Sqlite>,
 ) -> Result<String, DbErrors> {
-        Ok(track_queries::select_path(db_pool, &track_id.as_str()).await.map_err(DbErrors::SqliteError)?)
+        Ok(track_queries::select_path(db_pool, &track_id.as_str())
+                .await
+                .map_err(DbErrors::SqliteError)?)
 }

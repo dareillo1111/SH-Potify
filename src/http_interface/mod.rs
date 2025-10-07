@@ -47,9 +47,10 @@ pub async fn select_db_playlists(
 #[axum::debug_handler]
 pub async fn download_playlists(
         State(state): State<AppState>,
-        Json(playlists): Json<Vec<Playlist>>,
+        Json(playlists): Json<Vec<String>>,
 ) -> Result<StatusCode, HttpInterfaceErrors> {
-        let _ = shpotify::download_playlists(playlists, &state.db_pool, state.semaphore.clone())
+        println!("recived: {:#?}", &playlists);
+        let _ = shpotify::download_playlists(playlists, &state.db_pool, state.semaphore.clone(), &state.token_manager)
                 .await;
 
         Ok(StatusCode::OK)

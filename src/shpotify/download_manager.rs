@@ -16,19 +16,24 @@ pub(crate) async fn download_playlist(
                 //I'm consuming the playlist variable in the for loop so i need to clone it.
                 //There's a better way 100%
                 let mut join_set = JoinSet::new();
-                for track in clone.tracks.into_iter() {
-                        let semaphore = semaphore.clone();
-                        join_set.spawn(async move {
-                                let _permit = semaphore.acquire().await.unwrap();
-                                let path = track_downloader::download_track(&track).await;
-                                (track.spotify_id, path)
-                        });
-                }
-                let download_paths = join_set.join_all().await;
-                let paths: HashMap<String, Option<String>> = download_paths.into_iter().collect();
+                if let Some(tracks) = clone.tracks {
+                        for track in tracks.into_iter() {
+                                let semaphore = semaphore.clone();
+                                join_set.spawn(async move {
+                                        let _permit = semaphore.acquire().await.unwrap();
+                                        let path = track_downloader::download_track(&track).await;
+                                        (track.spotify_id, path)
+                                });
+                        }
+                        let download_paths = join_set.join_all().await;
+                        let paths: HashMap<String, Option<String>> =
+                                download_paths.into_iter().collect();
 
-                let tracks = asign_tracks_paths(paths, playlist.tracks.clone());
-                playlist.tracks = tracks;
+                        if let Some(track) = playlist.tracks.clone() {
+                                let tracks = asign_tracks_paths(paths, track);
+                                playlist.tracks = Some(tracks);
+                        }
+                }
         }
         playlists
 }

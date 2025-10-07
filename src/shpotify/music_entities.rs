@@ -17,5 +17,5 @@ pub struct Playlist {
         pub spotify_id: String,
         pub name: String,
         #[sqlx(skip)]
-        pub tracks: Vec<Track>,
+        pub tracks: Option<Vec<Track>>,
 }

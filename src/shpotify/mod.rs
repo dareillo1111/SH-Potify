@@ -25,17 +25,23 @@ pub async fn get_playlists(
 }
 
 pub async fn download_playlists(
-        playlists: Vec<Playlist>,
+        playlists_id: Vec<String>,
         db_pool: &SqlitePool,
         semaphore: Arc<Semaphore>,
+        token_manager: &TokenManager,
 ) -> () {
-        //This function dosent care about download errors. It stores None if the download failed.
-        let new_playlists = download_manager::download_playlist(playlists, semaphore).await;
-        println!("downloaded_playlists: {:?}", new_playlists);
+        //This function dosent manage download errors. It stores None if the download failed.
+        let a = spotify_api::get_playlists_by_id(playlists_id, token_manager).await;
+        println!("FullPlaylists{:#?}", a);
 
-        for playlist in new_playlists.iter() {
-                println!("inserting: {:?}", playlist);
-                db::insert_playlist(playlist, db_pool).await;
+        if let Ok(playlists) = a {
+                let new_playlists = download_manager::download_playlist(playlists, semaphore).await;
+                println!("downloaded_playlists: {:?}", new_playlists);
+
+                for playlist in new_playlists.iter() {
+                        println!("inserting: {:?}", playlist);
+                        db::insert_playlist(playlist, db_pool).await;
+                }
         }
 }
 

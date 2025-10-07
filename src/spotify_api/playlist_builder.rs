@@ -5,28 +5,27 @@ use crate::{
         spotify_api::errors::SpotifyAPIErrors as SpotiErr,
 };
 
-pub(crate) fn get_playlists_tracks_href(
-        json_response: &serde_json::Value,
+pub(crate) fn get_playlist_tracks_href(
+        json_playlist: &serde_json::Value,
 ) -> Option<HashMap<String, String>> {
         let mut tracks_href = HashMap::new();
-        let items = json_response
-                .get("items")
-                .and_then(|item| item.as_array())?;
 
-        for item in items.iter() {
-                let track_url = item
-                        .get("tracks")
-                        .and_then(|track| track.get("href"))
-                        .and_then(|href| href.as_str())?
-                        .to_string();
-                let playlist_id = item.get("id").and_then(|id| id.as_str())?.to_string();
+        let track_url = json_playlist
+                .get("tracks")
+                .and_then(|track| track.get("href"))
+                .and_then(|href| href.as_str())?
+                .to_string();
 
-                tracks_href.insert(playlist_id, track_url);
-        }
+        let playlist_id = json_playlist
+                .get("id")
+                .and_then(|id| id.as_str())?
+                .to_string();
+
+        tracks_href.insert(playlist_id, track_url);
         Some(tracks_href)
 }
 
-pub(crate) fn build_track(json_track: &serde_json::Value) -> Result<Vec<Track>, SpotiErr> {
+pub(crate) fn build_tracks(json_track: &serde_json::Value) -> Result<Vec<Track>, SpotiErr> {
         let items = json_track
                 .get("items")
                 .and_then(|item| item.as_array())
@@ -83,11 +82,11 @@ pub(crate) fn build_track(json_track: &serde_json::Value) -> Result<Vec<Track>, 
         Ok(tracks)
 }
 
-pub(crate) fn build_playlist(
-        mut tracks: HashMap<String, Vec<Track>>,
-        json_response: serde_json::Value,
+pub(crate) fn build_playlists(
+        tracks: &mut Option<HashMap<String, Vec<Track>>>,
+        json_playlists: serde_json::Value,
 ) -> Result<Vec<Playlist>, SpotiErr> {
-        let items = json_response
+        let items = json_playlists
                 .get("items")
                 .and_then(|item| item.as_array())
                 .ok_or(SpotiErr::NoPlaylists)?;
@@ -95,22 +94,39 @@ pub(crate) fn build_playlist(
         let mut playlists: Vec<Playlist> = Vec::new();
 
         for item in items.iter() {
-                if let Some(spotify_id) = item.get("id").and_then(|id| id.as_str()) {
-                        let name = item
-                                .get("name")
-                                .and_then(|name| name.as_str())
-                                .unwrap_or("unknown")
-                                .to_string();
-
-                        if let Some(tracks) = tracks.remove(spotify_id) {
-                                playlists.push(Playlist {
-                                        spotify_id: spotify_id.to_string(),
-                                        name,
-                                        tracks,
-                                });
-                        };
-                }
+                playlists.push(build_playlist(tracks, item)?);
         }
 
         Ok(playlists)
+}
+
+pub(crate) fn build_playlist(
+        tracks: &mut Option<HashMap<String, Vec<Track>>>,
+        json_playlist: &serde_json::Value,
+) -> Result<Playlist, SpotiErr> {
+        if let Some(spotify_id) = json_playlist.get("id").and_then(|id| id.as_str()) {
+                let name = json_playlist
+                        .get("name")
+                        .and_then(|name| name.as_str())
+                        .unwrap_or("unknown")
+                        .to_string();
+
+                if let Some(tracks_map) = tracks.as_mut() {
+                        //reminder: remove returns the value of the key before deleting it
+                        if let Some(tracks) = tracks_map.remove(spotify_id) {
+                                return Ok(Playlist {
+                                        spotify_id: spotify_id.to_string(),
+                                        name,
+                                        tracks: Some(tracks),
+                                });
+                        };
+                } else {
+                        return Ok(Playlist {
+                                spotify_id: spotify_id.to_string(),
+                                name,
+                                tracks: None,
+                        });
+                };
+        }
+        Err(SpotiErr::NoPlaylists)
 }

@@ -13,6 +13,15 @@ pub async fn init_db(db_url: &str) -> Result<SqlitePool, sqlx::Error> {
         Ok(init_db::init_db(db_url).await?)
 }
 
+pub(crate) async fn insert_playlist_track(
+        track: crate::shpotify::music_entities::Track,
+        playlist: Playlist,
+        db_pool: &Pool<Sqlite>,
+) -> () {
+        track_queries::insert(&track, db_pool).await;
+        playlist_track_queries::insert(&track.spotify_id, &playlist.spotify_id, db_pool).await;
+}
+
 pub(crate) async fn insert_playlist(
         playlist: &Playlist,
         db_pool: &Pool<Sqlite>,
@@ -27,30 +36,6 @@ pub(crate) async fn insert_playlist(
                 errors.push(result);
         }
 
-        if let Some(tracks) = playlist.tracks.clone() {
-                for track in tracks.iter() {
-                        if track.file_path.is_none() {
-                                errors.push(Err(DbErrors::TrackStructError(
-                                        track.spotify_id.clone(),
-                                )));
-                        } else {
-                                let result = track_queries::insert(track, db_pool)
-                                        .await
-                                        .map_err(DbErrors::SqliteError);
-
-                                if result.is_err() {
-                                        errors.push(result);
-                                } else {
-                                        playlist_track_queries::insert(
-                                                &track.spotify_id,
-                                                &playlist.spotify_id,
-                                                db_pool,
-                                        )
-                                        .await;
-                                }
-                        }
-                }
-        }
         errors
 }
 

@@ -31,16 +31,34 @@ pub async fn download_playlists(
         token_manager: &TokenManager,
 ) -> () {
         //This function dosent manage download errors. It stores None if the download failed.
-        let a = spotify_api::get_playlists_by_id(playlists_id, token_manager).await;
-        println!("FullPlaylists{:#?}", a);
+        let playlists = spotify_api::get_playlists_by_id(playlists_id, token_manager).await;
 
-        if let Ok(playlists) = a {
-                let new_playlists = download_manager::download_playlist(playlists, semaphore).await;
-                println!("downloaded_playlists: {:?}", new_playlists);
+        if let Ok(mut binding_playlist) = playlists {
+                for playlist in binding_playlist.iter_mut() {
+                        let playlist_clone = playlist.clone();
+                        if let Some(tracks) = &mut playlist.tracks {
+                                db::insert_playlist(&playlist_clone, db_pool).await;
 
-                for playlist in new_playlists.iter() {
-                        println!("inserting: {:?}", playlist);
-                        db::insert_playlist(playlist, db_pool).await;
+                                for track in tracks.iter_mut() {
+                                        let semaphore = semaphore.clone();
+                                        let db_pool = db_pool.clone();
+                                        let mut track = track.clone();
+                                        let playlist = playlist_clone.clone();
+
+                                        tokio::spawn(async move {
+                                                let _permit = semaphore.acquire().await.unwrap();
+                                                if let Some(_) =
+                                                        download_manager::download_track(&mut track)
+                                                                .await
+                                                {
+                                                        db::insert_playlist_track(
+                                                                track, playlist, &db_pool,
+                                                        )
+                                                        .await;
+                                                };
+                                        });
+                                }
+                        }
                 }
         }
 }

@@ -1,54 +1,11 @@
-use std::{collections::HashMap, sync::Arc};
+use crate::{shpotify::music_entities::Track, track_downloader};
 
-use tokio::{sync::Semaphore, task::JoinSet};
-
-use crate::{
-        shpotify::music_entities::{Playlist, Track},
-        track_downloader,
-};
-
-pub(crate) async fn download_playlist(
-        mut playlists: Vec<Playlist>,
-        semaphore: Arc<Semaphore>,
-) -> Vec<Playlist> {
-        for playlist in playlists.iter_mut() {
-                let clone = playlist.clone();
-                //I'm consuming the playlist variable in the for loop so i need to clone it.
-                //There's a better way 100%
-                let mut join_set = JoinSet::new();
-                if let Some(tracks) = clone.tracks {
-                        for track in tracks.into_iter() {
-                                let semaphore = semaphore.clone();
-                                join_set.spawn(async move {
-                                        let _permit = semaphore.acquire().await.unwrap();
-                                        let path = track_downloader::download_track(&track).await;
-                                        (track.spotify_id, path)
-                                });
-                        }
-                        let download_paths = join_set.join_all().await;
-                        let paths: HashMap<String, Option<String>> =
-                                download_paths.into_iter().collect();
-
-                        if let Some(track) = playlist.tracks.clone() {
-                                let tracks = asign_tracks_paths(paths, track);
-                                playlist.tracks = Some(tracks);
-                        }
-                }
+pub(crate) async fn download_track(track: &mut Track) -> Option<()> {
+        if let Some(track_path) = track_downloader::download_track(track).await {
+                track.file_path = Some(track_path);
+                Some(())
+        } else {
+                track.file_path = None;
+                None
         }
-        playlists
-}
-
-fn asign_tracks_paths(
-        mut download_paths: HashMap<String, Option<String>>,
-        mut tracks: Vec<Track>,
-) -> Vec<Track> {
-        for track in tracks.iter_mut() {
-                let id = &track.spotify_id;
-                if let Some(path) = download_paths.remove(id) {
-                        track.file_path = path;
-                } else {
-                        track.file_path = None;
-                }
-        }
-        return tracks;
 }

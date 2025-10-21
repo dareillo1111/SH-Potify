@@ -20,12 +20,10 @@ pub async fn get_user_playlists(
         Query(params): Query<HashMap<String, String>>,
 ) -> Result<Json<Vec<Playlist>>, HttpInterfaceErrors> {
         if let Some(id) = params.get("user-id") {
-                println!("serving");
                 let token_manager = &state.token_manager;
                 let playlists = shpotify::get_playlists(id, token_manager)
                         .await
                         .map_err(HttpInterfaceErrors::ShpotifyError)?;
-                println!("correct");
 
                 return Ok(Json(playlists));
         }
@@ -50,8 +48,13 @@ pub async fn download_playlists(
         Json(playlists): Json<Vec<String>>,
 ) -> Result<StatusCode, HttpInterfaceErrors> {
         println!("recived: {:#?}", &playlists);
-        let _ = shpotify::download_playlists(playlists, &state.db_pool, state.semaphore.clone(), &state.token_manager)
-                .await;
+        let _ = shpotify::download_playlists(
+                playlists,
+                &state.db_pool,
+                state.semaphore.clone(),
+                &state.token_manager,
+        )
+        .await;
 
         Ok(StatusCode::OK)
 }

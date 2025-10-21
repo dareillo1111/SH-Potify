@@ -12,15 +12,11 @@ pub(crate) async fn download_track(track: &Track) -> Option<String> {
         let path = format!("{OUTPUT_DIR}{}.mp3", &track.spotify_id);
 
         // Spotdl CAN'T download songs with age restriction from youtube
+        // Most arguments can be ommited by configurating the config.json file of spotDl
         let command = Command::new("/home/dario/.local/bin/spotdl")
                 .arg(&track.url)
                 .arg("--output")
                 .arg(spotdl_path)
-                .arg("--format")
-                .arg("mp3")
-                .arg("--lyrics")
-                .arg("genius")
-                .arg("--dont-filter-results")
                 .status()
                 .await
                 .expect("downloading track failed");

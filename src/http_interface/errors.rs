@@ -11,8 +11,6 @@ pub enum HttpInterfaceErrors {
         MissingQueryParam,
         #[error(transparent)]
         ShpotifyError(#[from] ShpotifyErrors),
-        #[error("Playlist has no tracks")]
-        EmptyPlaylist,
 }
 
 impl IntoResponse for HttpInterfaceErrors {
@@ -23,9 +21,6 @@ impl IntoResponse for HttpInterfaceErrors {
                         }
                         HttpInterfaceErrors::ShpotifyError(spotify_apierrors) => {
                                 (StatusCode::BAD_REQUEST, spotify_apierrors.to_string())
-                        }
-                        HttpInterfaceErrors::EmptyPlaylist => {
-                                (StatusCode::BAD_REQUEST, self.to_string())
                         }
                 };
 

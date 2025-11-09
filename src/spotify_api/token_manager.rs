@@ -66,15 +66,9 @@ impl TokenManager {
                         .header("Authorization", format!("Basic {encoded_auth}"))
                         .form(&form);
 
-                let response = token_request
-                        .send()
-                        .await
-                        .map_err(SpotiErr::RequestFailed)?;
+                let response = token_request.send().await?;
 
-                let token_response = response
-                        .json::<Token>()
-                        .await
-                        .map_err(SpotiErr::JsonParsingFailed)?;
+                let token_response = response.json::<Token>().await?;
 
                 TokenManager::set_token_timeout(&token_response.expires_in, is_expired).await;
                 TokenManager::set_token(token, token_response).await;

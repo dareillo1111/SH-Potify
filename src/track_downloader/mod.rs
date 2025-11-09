@@ -3,8 +3,6 @@ use std::path::Path;
 use crate::shpotify::music_entities::Track;
 use tokio::process::Command;
 
-mod errors;
-
 const OUTPUT_DIR: &str = "./tracks/";
 
 pub(crate) async fn download_track(track: &Track) -> Option<String> {
@@ -13,7 +11,7 @@ pub(crate) async fn download_track(track: &Track) -> Option<String> {
 
         // Spotdl CAN'T download songs with age restriction from youtube
         // Most arguments can be ommited by configurating the config.json file of spotDl
-        let command = Command::new("/home/dario/.local/bin/spotdl")
+        let _command = Command::new("/home/dario/.local/bin/spotdl")
                 .arg(&track.url)
                 .arg("--output")
                 .arg(spotdl_path)

@@ -35,17 +35,13 @@ async fn get_playlist_base(
                         format!("{} {}", token.token_type, token.access_token),
                 )
                 .send()
-                .await
-                .map_err(SpotiErr::RequestFailed)?;
+                .await?;
 
         if playlists_request.status() == reqwest::StatusCode::NOT_FOUND {
                 return Err(SpotiErr::UserIdNotFound);
         }
 
-        let json_response = playlists_request
-                .json::<Value>()
-                .await
-                .map_err(SpotiErr::JsonParsingFailed)?;
+        let json_response = playlists_request.json::<Value>().await?;
 
         Ok(json_response)
 }
@@ -67,14 +63,10 @@ async fn get_tracks(
                                 format!("{} {}", token.token_type, token.access_token),
                         )
                         .send()
-                        .await
-                        .map_err(SpotiErr::RequestFailed)?;
+                        .await?;
                 println!("Recived track");
 
-                let json_track = track_request
-                        .json::<Value>()
-                        .await
-                        .map_err(SpotiErr::JsonParsingFailed)?;
+                let json_track = track_request.json::<Value>().await?;
 
                 let track = playlist_builder::build_tracks(&json_track)?;
                 playlist_tracks.insert(playlist_id.to_string(), track);
@@ -119,17 +111,13 @@ async fn request_playlist_by_id(
                         format!("{} {}", token.token_type, token.access_token),
                 )
                 .send()
-                .await
-                .map_err(SpotiErr::RequestFailed)?;
+                .await?;
 
         if playlists_request.status() == reqwest::StatusCode::NOT_FOUND {
                 return Err(SpotiErr::UserIdNotFound);
         }
 
-        let json_playlist = playlists_request
-                .json::<Value>()
-                .await
-                .map_err(SpotiErr::JsonParsingFailed)?;
+        let json_playlist = playlists_request.json::<Value>().await?;
 
         Ok(json_playlist)
 }

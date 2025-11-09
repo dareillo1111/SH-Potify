@@ -21,9 +21,7 @@ pub async fn get_user_playlists(
 ) -> Result<Json<Vec<Playlist>>, HttpInterfaceErrors> {
         if let Some(id) = params.get("user-id") {
                 let token_manager = &state.token_manager;
-                let playlists = shpotify::get_playlists(id, token_manager)
-                        .await
-                        .map_err(HttpInterfaceErrors::ShpotifyError)?;
+                let playlists = shpotify::get_playlists(id, token_manager).await?;
 
                 return Ok(Json(playlists));
         }
@@ -35,9 +33,7 @@ pub async fn get_user_playlists(
 pub async fn select_db_playlists(
         State(state): State<AppState>,
 ) -> Result<Json<Vec<Playlist>>, HttpInterfaceErrors> {
-        let playlists = shpotify::get_db_playlists(&state.db_pool)
-                .await
-                .map_err(HttpInterfaceErrors::ShpotifyError)?;
+        let playlists = shpotify::get_db_playlists(&state.db_pool).await?;
 
         return Ok(Json(playlists));
 }

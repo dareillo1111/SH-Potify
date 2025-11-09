@@ -5,10 +5,6 @@ use thiserror::Error;
 pub enum ShpotifyErrors {
         #[error(transparent)]
         SpotifyAPIError(#[from] SpotifyAPIErrors),
-        #[error("Failed downloading track")]
-        DownloadingTrackFailed,
-        #[error("Failed persisting track")]
-        PersistingTrackFailed,
         #[error(transparent)]
         DbError(#[from] DbErrors),
 }

@@ -8,6 +8,7 @@ pub struct Track {
         pub album_name: String,
         pub artist: String,
         pub name: String,
+        // Indicates to db that it shouldn't add this attribute to the table
         #[sqlx(skip)]
         pub url: String,
 }

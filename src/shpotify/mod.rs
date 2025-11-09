@@ -1,17 +1,18 @@
-use std::sync::Arc;
-
 use axum_extra::headers::Range;
 use sqlx::SqlitePool;
+use std::sync::Arc;
 use tokio::sync::Semaphore;
 
 use crate::{
         db,
-        shpotify::{errors::ShpotifyErrors, music_entities::Playlist},
+        shpotify::{
+                errors::ShpotifyErrors,
+                music_entities::{Playlist, Track},
+        },
         spotify_api::{self, token_manager::TokenManager},
-        track_streamer,
+        track_downloader, track_streamer,
 };
 
-mod download_manager;
 pub mod errors;
 pub mod music_entities;
 
@@ -29,38 +30,38 @@ pub async fn download_playlists(
         db_pool: &SqlitePool,
         semaphore: Arc<Semaphore>,
         token_manager: &TokenManager,
-) -> () {
-        //This function dosent manage download errors. It stores None if the download failed.
-        let playlists = spotify_api::get_playlists_by_id(playlists_id, token_manager).await;
+) -> Result<(), ShpotifyErrors> {
+        let playlists = spotify_api::get_playlists_by_id(playlists_id, token_manager).await?;
 
-        if let Ok(mut binding_playlist) = playlists {
-                for playlist in binding_playlist.iter_mut() {
-                        let playlist_clone = playlist.clone();
-                        if let Some(tracks) = &mut playlist.tracks {
-                                db::insert_playlist(&playlist_clone, db_pool).await;
-
-                                for track in tracks.iter_mut() {
-                                        let semaphore = semaphore.clone();
-                                        let db_pool = db_pool.clone();
-                                        let mut track = track.clone();
-                                        let playlist = playlist_clone.clone();
-
-                                        tokio::spawn(async move {
-                                                let _permit = semaphore.acquire().await.unwrap();
-                                                if let Some(_) =
-                                                        download_manager::download_track(&mut track)
-                                                                .await
-                                                {
-                                                        db::insert_playlist_track(
-                                                                track, playlist, &db_pool,
-                                                        )
-                                                        .await;
-                                                };
-                                        });
-                                }
+        for playlist in playlists.iter() {
+                if let Some(tracks) = &playlist.tracks {
+                        db::insert_playlist(&playlist, db_pool).await?;
+                        for track in tracks.iter() {
+                                download_thread(
+                                        semaphore.clone(),
+                                        track.clone(),
+                                        playlist.spotify_id.clone(),
+                                        db_pool.clone(),
+                                );
                         }
                 }
         }
+        Ok(())
+}
+
+fn download_thread(
+        semaphore: Arc<Semaphore>,
+        mut track: Track,
+        playlist_id: String,
+        db_pool: SqlitePool,
+) -> () {
+        tokio::spawn(async move {
+                // we lose the errors here, too advanced for me right now. JoinHandle
+                let _permit = semaphore.acquire().await.unwrap();
+                if let Some(_) = track_downloader::download_track(&mut track).await {
+                        let _ = db::insert_playlist_track(track, &playlist_id, &db_pool).await;
+                };
+        });
 }
 
 pub async fn get_db_playlists(db_pool: &SqlitePool) -> Result<Vec<Playlist>, ShpotifyErrors> {

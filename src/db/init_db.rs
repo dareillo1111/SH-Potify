@@ -1,6 +1,13 @@
+use std::{fs, path::Path};
+
 use sqlx::{migrate::MigrateDatabase, Row, Sqlite, SqlitePool};
 
 pub(crate) async fn init_db(db_url: &str) -> Result<SqlitePool, sqlx::Error> {
+        if let Some(parent) = Path::new(db_url).parent() {
+                fs::create_dir_all(parent)
+                        .expect("Failed to create parent directories for DB");
+        }
+
         if !Sqlite::database_exists(db_url).await.unwrap_or(false) {
                 Sqlite::create_database(db_url).await?;
                 println!("Crated db");

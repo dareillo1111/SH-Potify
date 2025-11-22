@@ -58,7 +58,8 @@ fn download_thread(
         tokio::spawn(async move {
                 // we lose the errors here, too advanced for me right now. JoinHandle
                 let _permit = semaphore.acquire().await.unwrap();
-                if let Some(_) = track_downloader::download_track(&mut track).await {
+                if let Some(path) = track_downloader::download_track(&mut track).await {
+                        track.file_path = Some(path);
                         let _ = db::insert_playlist_track(track, &playlist_id, &db_pool).await;
                 };
         });
@@ -80,6 +81,7 @@ pub(crate) async fn stream_track(
         let path = db::select_track_path(track_id, db_pool)
                 .await
                 .expect("failed");
+        println!("Full track path {path}");
         let range_stream = track_streamer::stream(&path, range).await;
 
         Ok(range_stream)

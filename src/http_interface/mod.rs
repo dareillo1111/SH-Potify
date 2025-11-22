@@ -61,6 +61,7 @@ pub async fn stream_track(
         Path(track_id): Path<String>,
         range: Option<TypedHeader<Range>>,
 ) -> Result<impl IntoResponse, HttpInterfaceErrors> {
+        println!("Streaming path {track_id}");
         let range = range.map(|TypedHeader(range)| range);
         let stream_track = shpotify::stream_track(track_id, range, &state.db_pool).await?;
         Ok(stream_track)

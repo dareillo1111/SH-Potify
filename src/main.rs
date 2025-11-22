@@ -32,7 +32,7 @@ async fn main() {
                 .allow_headers(Any)
                 .allow_methods(Any);
 
-        let db_pool = db::init_db("url").await.expect("Failed initializing db");
+        let db_pool = db::init_db("./sqlite/shpotify").await.expect("Failed initializing db");
         let semaphore = Arc::new(Semaphore::new(8));
         let token_manager = spotify_api::token_manager::TokenManager::new();
 
@@ -50,7 +50,7 @@ async fn main() {
                 .layer(cors)
                 .with_state(state);
 
-        let address = "0.0.0.0:6570";
+        let address = "0.0.0.0:6580";
         let listener = tokio::net::TcpListener::bind(address).await.unwrap();
 
         axum::serve(listener, router).await.unwrap();
